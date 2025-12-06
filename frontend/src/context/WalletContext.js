@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
 
 const WalletContext = createContext();
@@ -116,18 +116,20 @@ export function WalletProvider({ children }) {
     setChainId(null);
   };
 
-  const handleAccountsChanged = (accounts) => {
+  const handleAccountsChanged = useCallback((accounts) => {
     if (accounts.length === 0) {
-      disconnectWallet();
+      setAccount(null);
+      setProvider(null);
+      setChainId(null);
     } else {
       setAccount(accounts[0]);
     }
-  };
+  }, []);
 
-  const handleChainChanged = (chainId) => {
+  const handleChainChanged = useCallback((chainId) => {
     setChainId(Number(chainId));
     window.location.reload();
-  };
+  }, []);
 
   const value = {
     account,
