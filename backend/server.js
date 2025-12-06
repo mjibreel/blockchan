@@ -19,6 +19,20 @@ app.use('/api/stamp', stampRoutes);
 app.use('/api/verify', verifyRoutes);
 app.use('/api/stamps', stampsRoutes);
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'Qubic File Stamp API',
+    endpoints: {
+      health: '/health',
+      stamp: '/api/stamp',
+      verify: '/api/verify',
+      stamps: '/api/stamps'
+    }
+  });
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Qubic File Stamp API is running' });
