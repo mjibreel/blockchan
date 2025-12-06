@@ -15,6 +15,25 @@ export function WalletProvider({ children }) {
 
   const TARGET_CHAIN_ID = parseInt(process.env.REACT_APP_CHAIN_ID || '80002'); // Polygon Amoy
 
+  const disconnectWallet = () => {
+    setAccount(null);
+    setProvider(null);
+    setChainId(null);
+  };
+
+  const handleAccountsChanged = useCallback((accounts) => {
+    if (accounts.length === 0) {
+      disconnectWallet();
+    } else {
+      setAccount(accounts[0]);
+    }
+  }, []);
+
+  const handleChainChanged = useCallback((chainId) => {
+    setChainId(Number(chainId));
+    window.location.reload();
+  }, []);
+
   useEffect(() => {
     // Check if wallet is already connected
     if (window.ethereum) {
@@ -110,26 +129,6 @@ export function WalletProvider({ children }) {
     }
   };
 
-  const disconnectWallet = () => {
-    setAccount(null);
-    setProvider(null);
-    setChainId(null);
-  };
-
-  const handleAccountsChanged = useCallback((accounts) => {
-    if (accounts.length === 0) {
-      setAccount(null);
-      setProvider(null);
-      setChainId(null);
-    } else {
-      setAccount(accounts[0]);
-    }
-  }, []);
-
-  const handleChainChanged = useCallback((chainId) => {
-    setChainId(Number(chainId));
-    window.location.reload();
-  }, []);
 
   const value = {
     account,
