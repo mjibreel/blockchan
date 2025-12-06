@@ -1,0 +1,35 @@
+services:
+  # Backend API Service
+  - type: web
+    name: qubic-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      # Add your environment variables in Render dashboard:
+      # SUPABASE_URL, SUPABASE_SERVICE_KEY, PRIVATE_KEY, 
+      # RPC_URL, CHAIN_ID, CONTRACT_ADDRESS
+
+  # Frontend Static Site
+  - type: web
+    name: qubic-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: build
+    envVars:
+      # Update REACT_APP_API_URL with your backend URL after deployment
+      - key: REACT_APP_API_URL
+        value: https://qubic-backend.onrender.com
+      - key: REACT_APP_CHAIN_ID
+        value: 80002
+      - key: REACT_APP_POLYGONSCAN_URL
+        value: https://amoy.polygonscan.com
+      - key: REACT_APP_CONTRACT_ADDRESS
+        value: 0xf8D623Dbfa1Dd1A3c904A69323df00773827C2DA
+
