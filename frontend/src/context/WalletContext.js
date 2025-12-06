@@ -29,7 +29,7 @@ export function WalletProvider({ children }) {
         window.ethereum.removeListener('chainChanged', handleChainChanged);
       }
     };
-  }, []);
+  }, [handleAccountsChanged, handleChainChanged]);
 
   const checkConnection = async () => {
     try {

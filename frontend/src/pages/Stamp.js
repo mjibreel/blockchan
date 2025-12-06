@@ -128,7 +128,7 @@ function Stamp() {
         const alreadyExists = await contract.fileExists(fileHashBytes32);
         if (alreadyExists) {
           // Get more details about the existing stamp
-          const [exists, owner, timestamp, isPublicExisting] = await contract.verifyFile(fileHashBytes32);
+          const [, , timestamp] = await contract.verifyFile(fileHashBytes32);
           throw new Error(`This file with this PIN was already stamped on ${new Date(Number(timestamp) * 1000).toLocaleString()}. Try a different file or use a different PIN.`);
         }
         console.log('✅ File not yet stamped, proceeding...');
@@ -198,7 +198,7 @@ function Stamp() {
           errorMessage = 'This file with this PIN has already been stamped. Try a different file or use a different PIN.';
         } else if (err.message && err.message.includes('would fail')) {
           errorMessage = err.message;
-        } else {
+      } else {
           errorMessage = 'RPC error: The blockchain node encountered an issue. Please check: 1) You have enough MATIC for gas, 2) You\'re on Polygon Amoy network, 3) Try again in a moment.';
         }
       } else if (err.reason && err.reason.includes('File already stamped')) {
