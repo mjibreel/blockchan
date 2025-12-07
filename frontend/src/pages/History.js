@@ -50,8 +50,23 @@ function History() {
 
     try {
       const response = await axios.get(`${API_URL}/api/history/${account}`);
-      setTransactions(response.data.transactions || []);
-      setFilteredTransactions(response.data.transactions || []);
+      
+      // Security: Verify that all transactions belong to the connected wallet
+      const transactions = response.data.transactions || [];
+      const connectedAddress = account.toLowerCase();
+      
+      // Filter to only show transactions owned by the connected wallet
+      const ownTransactions = transactions.filter(tx => 
+        tx.owner && tx.owner.toLowerCase() === connectedAddress
+      );
+      
+      // If there's a mismatch, log a warning (shouldn't happen, but extra security)
+      if (transactions.length > 0 && ownTransactions.length !== transactions.length) {
+        console.warn('Security warning: Some transactions do not belong to connected wallet');
+      }
+      
+      setTransactions(ownTransactions);
+      setFilteredTransactions(ownTransactions);
     } catch (err) {
       console.error('Error fetching history:', err);
       setError(
