@@ -6,6 +6,7 @@
 [build.environment]
   # Ensure environment variables are available during build
   NODE_VERSION = "18"
+  CI = false
 
 [[redirects]]
   from = "/*"
