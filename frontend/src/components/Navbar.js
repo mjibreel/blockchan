@@ -27,42 +27,42 @@ function Navbar() {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
-              <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              <span className="text-xl md:text-2xl font-bold text-blue-600 dark:text-blue-400">
                 🔐 Qubic File Stamp
               </span>
             </Link>
-            <div className="ml-10 flex items-center space-x-4">
+            <div className="ml-6 md:ml-10 flex items-center space-x-2 md:space-x-4">
               <Link
                 to="/stamp"
-                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium"
+                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-2 md:px-3 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 Stamp
               </Link>
               <Link
                 to="/verify"
-                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium"
+                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-2 md:px-3 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 Verify
               </Link>
               <Link
                 to="/history"
-                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium"
+                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-2 md:px-3 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 History
               </Link>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
-            {/* Chain Selector - Compact and clean */}
-            <div className="relative hidden md:block">
+          <div className="flex items-center space-x-2 md:space-x-3">
+            {/* Chain Selector - Compact, hidden on mobile */}
+            <div className="relative hidden lg:block">
               <button
                 onClick={() => setShowChainSelector(!showChainSelector)}
-                className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded-md text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center border border-gray-200 dark:border-gray-600"
-                title="Select Network"
+                className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2.5 py-1.5 rounded-md text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center border border-gray-200 dark:border-gray-600 transition-colors"
+                title={`Current network: ${selectedNetwork?.name || 'Unknown'}`}
               >
                 <span className="mr-1.5">🌐</span>
-                <span>{selectedNetwork?.name?.split(' ')[0] || 'Network'}</span>
-                <span className="ml-1.5 text-[10px] opacity-70">▼</span>
+                <span className="max-w-[80px] truncate">{selectedNetwork?.name?.split(' ')[0] || 'Network'}</span>
+                <span className="ml-1 text-[10px] opacity-70">▼</span>
               </button>
               
               {showChainSelector && (
