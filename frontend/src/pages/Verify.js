@@ -87,20 +87,32 @@ function Verify() {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 30000, // 30 second timeout for verification
       });
 
       setResult(response.data);
     } catch (err) {
       console.error('Error verifying file:', err);
       
-      // Check if it's a connection error
+      // Check if it's a connection or CORS error
       const isConnectionError = err.code === 'ECONNREFUSED' || 
                                 err.code === 'ERR_NETWORK' ||
+                                err.code === 'ERR_FAILED' ||
                                 err.message?.includes('ERR_CONNECTION_REFUSED') || 
                                 err.message?.includes('Network Error') ||
-                                err.message?.includes('Failed to fetch');
+                                err.message?.includes('Failed to fetch') ||
+                                err.message?.includes('CORS') ||
+                                (err.response?.status === 0);
       
-      if (isConnectionError) {
+      // Check if it's a CORS error specifically
+      const isCorsError = !err.response && 
+                         (err.message?.includes('CORS') || 
+                          err.message?.includes('Access-Control-Allow-Origin') ||
+                          err.code === 'ERR_FAILED');
+      
+      if (isCorsError) {
+        setError('CORS Error: Backend is not allowing requests from this origin. Please check backend CORS configuration.');
+      } else if (isConnectionError) {
         setError('Cannot connect to backend server. File verification on blockchain still works - you can check your transaction on the block explorer using the file hash.');
       } else {
         const errorMsg = err.response?.data?.error || err.message;

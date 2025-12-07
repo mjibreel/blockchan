@@ -28,7 +28,9 @@ function History() {
     setError(null);
 
     try {
-      const response = await axios.get(`${API_URL}/api/history/${account}`);
+      const response = await axios.get(`${API_URL}/api/history/${account}`, {
+        timeout: 30000, // 30 second timeout for history fetch
+      });
       
       // Security: Verify that all transactions belong to the connected wallet
       const transactions = response.data.transactions || [];
@@ -49,14 +51,41 @@ function History() {
     } catch (err) {
       console.error('Error fetching history:', err);
       
-      // Check if it's a connection error
+      // Check if it's a connection or CORS error
       const isConnectionError = err.code === 'ECONNREFUSED' || 
                                 err.code === 'ERR_NETWORK' ||
+                                err.code === 'ERR_FAILED' ||
                                 err.message?.includes('ERR_CONNECTION_REFUSED') || 
                                 err.message?.includes('Network Error') ||
-                                err.message?.includes('Failed to fetch');
+                                err.message?.includes('Failed to fetch') ||
+                                err.message?.includes('CORS') ||
+                                (err.response?.status === 0);
       
-      if (isConnectionError) {
+      // Check if it's a CORS error specifically
+      const isCorsError = !err.response && 
+                         (err.message?.includes('CORS') || 
+                          err.message?.includes('Access-Control-Allow-Origin') ||
+                          err.code === 'ERR_FAILED');
+      
+      if (isCorsError) {
+        setError(
+          <div>
+            <p className="mb-2">⚠️ CORS Error: Backend is not allowing requests from this origin.</p>
+            <p className="mb-2 text-sm">The backend needs to be configured to allow CORS. Current API URL: <code className="bg-gray-100 px-1 rounded text-xs">{API_URL}</code></p>
+            <p className="text-sm mt-2">
+              <span className="font-semibold">Alternative:</span> View your transactions on{' '}
+              <a 
+                href={`${BLOCK_EXPLORER_URL}/address/${account}`} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-blue-600 underline"
+              >
+                Block Explorer
+              </a>
+            </p>
+          </div>
+        );
+      } else if (isConnectionError) {
         setError(
           <div>
             <p className="mb-2">⚠️ Cannot connect to backend server.</p>
