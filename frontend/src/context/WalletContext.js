@@ -17,16 +17,13 @@ export function WalletProvider({ children }) {
 
   const disconnectWallet = async () => {
     try {
-      // Clear all state
+      // Clear all application state
       setAccount(null);
       setProvider(null);
       setChainId(null);
       
-      // Try to disconnect from MetaMask (if supported)
-      if (window.ethereum && window.ethereum.disconnect) {
-        await window.ethereum.disconnect();
-      }
-      
+      // Note: MetaMask may still remember the connection permission
+      // Users can manually disconnect in MetaMask's "Connected Sites" if needed
       console.log('Wallet disconnected successfully');
     } catch (error) {
       // Even if disconnect fails, clear the state
@@ -78,7 +75,10 @@ export function WalletProvider({ children }) {
 
     setIsConnecting(true);
     try {
-      // Request accounts - this will show MetaMask popup for user to select/confirm account
+      // Use eth_requestAccounts - this will:
+      // 1. Open MetaMask popup if no permissions exist
+      // 2. Open MetaMask popup even if permissions exist (in most versions)
+      // 3. Allow user to select/confirm account
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       
       if (!accounts || accounts.length === 0) {
@@ -103,6 +103,18 @@ export function WalletProvider({ children }) {
       return true;
     } catch (error) {
       console.error('Error connecting wallet:', error);
+      
+      // If user rejected the connection, don't show error
+      if (error.code === 4001) {
+        console.log('User rejected wallet connection');
+      } else if (error.code === -32002) {
+        // Connection request already pending
+        console.log('Connection request already pending');
+        alert('A connection request is already pending. Please check MetaMask.');
+      } else {
+        alert('Error connecting wallet: ' + (error.message || 'Unknown error'));
+      }
+      
       setIsConnecting(false);
       return false;
     }
