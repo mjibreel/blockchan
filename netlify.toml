@@ -3,6 +3,10 @@
   publish = "build"
   command = "npm install && npm run build"
 
+[build.environment]
+  # Ensure environment variables are available during build
+  NODE_VERSION = "18"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

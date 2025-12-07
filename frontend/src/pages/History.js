@@ -88,7 +88,7 @@ function History() {
     } finally {
       setLoading(false);
     }
-  }, [account]);
+  }, [account, BLOCK_EXPLORER_URL]);
 
   useEffect(() => {
     if (isConnected && account) {
