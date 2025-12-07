@@ -25,6 +25,7 @@ function Stamp() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [backendWarning, setBackendWarning] = useState(null);
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -97,6 +98,7 @@ function Stamp() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setBackendWarning(null);
 
     try {
       // Step 1: Generate file hash with PIN (double authentication)
@@ -169,46 +171,86 @@ function Stamp() {
       const receipt = await tx.wait();
       console.log('Transaction confirmed:', receipt.blockNumber);
 
-      // Step 7: Send metadata to backend to save in database
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('ownerAddress', account);
-      formData.append('isPublic', isPublic);
-      formData.append('txHash', tx.hash);
-      formData.append('fileHash', fileHash.slice(2)); // Remove 0x for backend
-      formData.append('hasPin', 'true'); // Indicate this hash includes PIN
+      // Step 7: Send metadata to backend to save in database (optional - non-blocking)
+      // If backend fails, still show success since blockchain transaction succeeded
+      let backendData = null;
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('ownerAddress', account);
+        formData.append('isPublic', isPublic);
+        formData.append('txHash', tx.hash);
+        formData.append('fileHash', fileHash.slice(2)); // Remove 0x for backend
+        formData.append('hasPin', 'true'); // Indicate this hash includes PIN
 
-      const response = await axios.post(`${API_URL}/api/stamp`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+        const response = await axios.post(`${API_URL}/api/stamp`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          timeout: 5000, // 5 second timeout
+        });
 
+        backendData = response.data;
+      } catch (backendError) {
+        // Backend failed, but blockchain transaction succeeded - that's what matters!
+        console.warn('Backend API call failed (transaction still succeeded on blockchain):', backendError);
+        // Set warning but continue - blockchain transaction is what matters
+        if (backendError.code === 'ECONNREFUSED' || backendError.message?.includes('ERR_CONNECTION_REFUSED') || 
+            backendError.code === 'ERR_NETWORK' || backendError.message?.includes('Network Error')) {
+          setBackendWarning('⚠️ Backend server is offline. Your file was successfully stamped on the blockchain, but metadata could not be saved to the database. You can still verify your file using the transaction hash below.');
+        } else {
+          setBackendWarning('⚠️ Backend API call failed. Your file was successfully stamped on the blockchain, but some features may be limited.');
+        }
+      }
+
+      // Get block timestamp (more accurate than current time)
+      let blockTimestamp = Date.now();
+      try {
+        const block = await provider.getBlock(receipt.blockNumber);
+        if (block && block.timestamp) {
+          blockTimestamp = Number(block.timestamp) * 1000;
+        }
+      } catch (blockError) {
+        console.warn('Could not fetch block timestamp, using current time:', blockError);
+      }
+
+      // Show success with blockchain data (backend data is optional)
       setResult({
-        ...response.data,
+        fileHash: fileHash.slice(2), // Remove 0x for display
+        ownerAddress: account,
+        timestamp: new Date(blockTimestamp).toISOString(),
+        isPublic: isPublic,
         txHash: tx.hash,
         blockNumber: receipt.blockNumber,
+        fileName: file.name,
+        fileSize: file.size,
+        ...backendData, // Include backend data if available (overrides above if present)
       });
     } catch (err) {
       console.error('Error stamping file:', err);
       let errorMessage = 'Failed to stamp file. Please try again.';
       
-      if (err.code === 'ACTION_REJECTED') {
-        errorMessage = 'Transaction was rejected. Please try again.';
+      // Check if this is a network/connection error (backend offline)
+      if (err.code === 'ECONNREFUSED' || err.message?.includes('ERR_CONNECTION_REFUSED') || 
+          err.message?.includes('Network Error') || err.code === 'ERR_NETWORK') {
+        errorMessage = 'Cannot connect to backend server. Please ensure the backend is running. If you just deployed to blockchain, check your transaction on the block explorer.';
+      } else if (err.code === 'ACTION_REJECTED') {
+        errorMessage = 'Transaction was rejected by user. Please try again.';
       } else if (err.code === 'UNKNOWN_ERROR' || err.code === -32603) {
         // Internal JSON-RPC error - could be various issues
         if (err.message && err.message.includes('File already stamped')) {
           errorMessage = 'This file with this PIN has already been stamped. Try a different file or use a different PIN.';
         } else if (err.message && err.message.includes('would fail')) {
           errorMessage = err.message;
-      } else {
+        } else {
           errorMessage = `RPC error: The blockchain node encountered an issue. Please check: 1) You have enough ${selectedNetwork?.nativeCurrency?.symbol || 'ETH'} for gas, 2) You're on ${selectedNetwork?.name || 'the correct'} network, 3) Try again in a moment.`;
         }
       } else if (err.reason && err.reason.includes('File already stamped')) {
         errorMessage = 'This file with this PIN has already been stamped. Try a different file or use a different PIN.';
       } else if (err.message && err.message.includes('File already stamped')) {
         errorMessage = 'This file with this PIN has already been stamped. Try a different file or use a different PIN.';
-      } else if (err.message) {
+      } else if (err.message && err.message.length > 0 && err.message !== 'eg') {
+        // Filter out meaningless error messages
         errorMessage = err.message;
       } else if (err.response?.data?.error) {
         errorMessage = err.response.data.error;
@@ -383,6 +425,13 @@ This document proves that the file with the above hash was stamped on the blockc
         >
           {loading ? 'Stamping...' : 'Stamp File on Blockchain'}
         </button>
+
+        {/* Backend Warning */}
+        {backendWarning && (
+          <div className="mt-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <p className="text-yellow-800 dark:text-yellow-200 text-sm">{backendWarning}</p>
+          </div>
+        )}
 
         {/* Success Result */}
         {result && (

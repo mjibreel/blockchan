@@ -219,6 +219,11 @@ PRIVATE_KEY=your_wallet_private_key
 
 ## 📦 Deployment
 
+### Current Live Deployments
+
+- **Frontend**: https://mjibreel-blockchan.netlify.app/
+- **Backend**: https://vercel.com/mohamed-jibrils-projects/blockchan
+
 ### Frontend (Netlify)
 
 1. Connect GitHub repository to Netlify
@@ -226,11 +231,29 @@ PRIVATE_KEY=your_wallet_private_key
    - Base directory: `frontend`
    - Build command: `npm install && npm run build`
    - Publish directory: `build`
-3. Add environment variables in Netlify dashboard
+3. Add environment variables in Netlify dashboard:
+   ```env
+   REACT_APP_API_URL=https://your-vercel-backend-url.vercel.app
+   REACT_APP_CHAIN_ID=80002
+   REACT_APP_POLYGONSCAN_URL=https://amoy.polygonscan.com
+   REACT_APP_CONTRACT_ADDRESS=0xf8D623Dbfa1Dd1A3c904A69323df00773827C2DA
+   ```
 4. Deploy automatically on push to `main`
 
-### Backend (Vercel)
+⚠️ **Important**: Replace `REACT_APP_API_URL` with your actual Vercel backend URL!
 
+### Backend Deployment Options
+
+The backend can be deployed to multiple platforms. Choose based on your needs:
+
+#### Option 1: Vercel (Serverless Functions) ⚡
+- ✅ Free tier available
+- ✅ Easy GitHub integration
+- ✅ Auto-deploy on push
+- ⚠️ Cold starts (slower first request)
+- ⚠️ 10s timeout on free tier
+
+**Setup:**
 1. Connect GitHub repository to Vercel
 2. Root directory: `backend`
 3. Framework preset: Other
@@ -238,6 +261,48 @@ PRIVATE_KEY=your_wallet_private_key
 5. Output directory: (none)
 6. Add environment variables in Vercel dashboard
 7. Deploy automatically on push to `main`
+
+#### Option 2: Render (Recommended for Backend) 🚀
+- ✅ Always-on free tier
+- ✅ No cold starts
+- ✅ Better for long-running operations
+- ✅ Supports databases
+
+**Setup:**
+1. Push code to GitHub
+2. Connect repository in Render dashboard
+3. Create new "Web Service"
+4. Configure:
+   - Root directory: `backend`
+   - Build command: `npm install`
+   - Start command: `npm start`
+5. Add environment variables
+6. Deploy!
+
+**Or use the Blueprint:** Upload `render.yaml` in Render dashboard for automatic setup.
+
+#### Option 3: Railway 🚂
+- ✅ Simple setup
+- ✅ Free tier (with credit card)
+- ✅ Good for beginners
+
+**Setup:**
+1. Connect GitHub to Railway
+2. Create new project from repo
+3. Select `backend` folder
+4. Add environment variables
+5. Deploy!
+
+#### Option 4: Fly.io (Containers) 🪁
+- ✅ Container-based
+- ✅ Global edge deployment
+- ✅ Free tier available
+
+**Setup:**
+1. Install Fly CLI: `curl -L https://fly.io/install.sh | sh`
+2. Run: `cd backend && fly launch`
+3. Add environment variables
+4. Deploy: `fly deploy`
 
 ### Smart Contracts
 
