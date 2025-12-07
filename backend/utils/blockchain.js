@@ -14,10 +14,9 @@ const CONTRACT_ABI = [
  * Get blockchain provider
  */
 function getProvider() {
-  if (!process.env.RPC_URL) {
-    throw new Error('RPC_URL not configured');
-  }
-  return new ethers.JsonRpcProvider(process.env.RPC_URL);
+  // Use environment variable or fallback to Polygon Amoy public RPC
+  const rpcUrl = process.env.RPC_URL || 'https://rpc-amoy.polygon.technology';
+  return new ethers.JsonRpcProvider(rpcUrl);
 }
 
 /**
