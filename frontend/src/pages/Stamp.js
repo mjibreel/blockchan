@@ -207,20 +207,20 @@ function Stamp() {
       // If backend fails, still show success since blockchain transaction succeeded
       let backendData = null;
       try {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('ownerAddress', account);
-        formData.append('isPublic', isPublic);
-        formData.append('txHash', tx.hash);
-        formData.append('fileHash', fileHash.slice(2)); // Remove 0x for backend
-        formData.append('hasPin', 'true'); // Indicate this hash includes PIN
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('ownerAddress', account);
+      formData.append('isPublic', isPublic);
+      formData.append('txHash', tx.hash);
+      formData.append('fileHash', fileHash.slice(2)); // Remove 0x for backend
+      formData.append('hasPin', 'true'); // Indicate this hash includes PIN
 
-        const response = await axios.post(`${API_URL}/api/stamp`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+      const response = await axios.post(`${API_URL}/api/stamp`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
           timeout: 5000, // 5 second timeout
-        });
+      });
 
         backendData = response.data;
       } catch (backendError) {
@@ -298,7 +298,7 @@ function Stamp() {
           errorMessage = err.message;
         } else if (err.message && (err.message.includes('timeout') || err.message.includes('slow'))) {
           errorMessage = `RPC node timeout: The blockchain node is slow or unresponsive. Try: 1) Wait a moment and try again, 2) Check your internet connection, 3) Switch RPC endpoint in MetaMask (Settings → Networks → Polygon Amoy → Edit).`;
-        } else {
+      } else {
           errorMessage = `RPC error: The blockchain node encountered an issue. Please check: 1) You have enough ${selectedNetwork?.nativeCurrency?.symbol || 'ETH'} for gas, 2) You're on ${selectedNetwork?.name || 'the correct'} network, 3) Try again in a moment. If the problem persists, try switching to a different RPC endpoint in MetaMask settings.`;
         }
       } else if (err.reason && err.reason.includes('File already stamped')) {
