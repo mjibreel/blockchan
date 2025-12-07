@@ -75,18 +75,10 @@ export function WalletProvider({ children }) {
 
     setIsConnecting(true);
     try {
-      // First, check if we already have accounts without requesting (silent check)
-      // This helps us know if permissions exist
-      let cachedAccounts = [];
-      try {
-        cachedAccounts = await window.ethereum.request({ method: 'eth_accounts' });
-      } catch (e) {
-        // Ignore - will request fresh below
-      }
-
       // Always use eth_requestAccounts to ensure MetaMask opens
-      // This will show the MetaMask popup even if permissions exist (in most MetaMask versions)
-      // Users can then select which account to connect
+      // This will show the MetaMask popup for account selection
+      // Note: If MetaMask has cached permissions, it may auto-connect to the last used account
+      // Users can switch accounts in MetaMask if needed
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       
       if (!accounts || accounts.length === 0) {
