@@ -3,10 +3,10 @@ import { useWallet } from '../context/WalletContext';
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
-const POLYGONSCAN_URL = process.env.REACT_APP_POLYGONSCAN_URL || 'https://amoy.polygonscan.com';
 
 function History() {
-  const { account, connectWallet, isConnected } = useWallet();
+  const { account, connectWallet, isConnected, selectedNetwork } = useWallet();
+  const BLOCK_EXPLORER_URL = selectedNetwork?.blockExplorerUrls?.[0] || 'https://amoy.polygonscan.com';
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -126,7 +126,7 @@ function History() {
       content += `Public: ${tx.isPublic ? 'Yes' : 'No'}\n`;
       content += `Block Number: ${tx.blockNumber}\n`;
       content += `Gas Used: ${tx.gasUsed}\n`;
-      content += `PolygonScan: ${POLYGONSCAN_URL}/tx/${tx.txHash}\n`;
+      content += `Block Explorer: ${BLOCK_EXPLORER_URL}/tx/${tx.txHash}\n`;
       content += '\n';
     });
 
@@ -272,7 +272,7 @@ function History() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <a
-                          href={`${POLYGONSCAN_URL}/tx/${tx.txHash}`}
+                          href={`${BLOCK_EXPLORER_URL}/tx/${tx.txHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-mono"
@@ -311,7 +311,7 @@ function History() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <a
-                          href={`${POLYGONSCAN_URL}/tx/${tx.txHash}`}
+                          href={`${BLOCK_EXPLORER_URL}/tx/${tx.txHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 dark:text-blue-400 hover:underline"

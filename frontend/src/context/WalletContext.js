@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
+import { SUPPORTED_NETWORKS, getNetworkByChainId, getDefaultNetwork, getSupportedChainIds } from '../config/networks';
 
 const WalletContext = createContext();
 
@@ -12,8 +13,14 @@ export function WalletProvider({ children }) {
   const [provider, setProvider] = useState(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [chainId, setChainId] = useState(null);
+  const [selectedNetwork, setSelectedNetwork] = useState(() => {
+    // Get saved network from localStorage or use default
+    const saved = localStorage.getItem('selectedNetwork');
+    return saved ? SUPPORTED_NETWORKS[saved] || getDefaultNetwork() : getDefaultNetwork();
+  });
 
-  const TARGET_CHAIN_ID = parseInt(process.env.REACT_APP_CHAIN_ID || '80002'); // Polygon Amoy
+  // Update TARGET_CHAIN_ID based on selected network
+  const TARGET_CHAIN_ID = selectedNetwork.chainId;
 
   const disconnectWallet = async () => {
     try {
@@ -120,12 +127,25 @@ export function WalletProvider({ children }) {
     }
   };
 
-  const switchNetwork = async () => {
+  const switchNetwork = async (networkToSwitch = null) => {
+    const network = networkToSwitch || selectedNetwork;
+    
     try {
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: `0x${TARGET_CHAIN_ID.toString(16)}` }],
+        params: [{ chainId: `0x${network.chainId.toString(16)}` }],
       });
+      
+      // Update selected network if switching to a new one
+      if (networkToSwitch && networkToSwitch.chainId !== selectedNetwork.chainId) {
+        const networkKey = Object.keys(SUPPORTED_NETWORKS).find(
+          key => SUPPORTED_NETWORKS[key].chainId === networkToSwitch.chainId
+        );
+        if (networkKey) {
+          setSelectedNetwork(networkToSwitch);
+          localStorage.setItem('selectedNetwork', networkKey);
+        }
+      }
     } catch (switchError) {
       // This error code indicates that the chain has not been added to MetaMask
       if (switchError.code === 4902) {
@@ -134,22 +154,53 @@ export function WalletProvider({ children }) {
             method: 'wallet_addEthereumChain',
             params: [
               {
-                chainId: `0x${TARGET_CHAIN_ID.toString(16)}`,
-                chainName: 'Polygon Amoy',
-                nativeCurrency: {
-                  name: 'MATIC',
-                  symbol: 'MATIC',
-                  decimals: 18,
-                },
-                rpcUrls: ['https://rpc-amoy.polygon.technology'],
-                blockExplorerUrls: ['https://amoy.polygonscan.com/'],
+                chainId: `0x${network.chainId.toString(16)}`,
+                chainName: network.name,
+                nativeCurrency: network.nativeCurrency,
+                rpcUrls: network.rpcUrls,
+                blockExplorerUrls: network.blockExplorerUrls,
               },
             ],
           });
+          
+          // Update selected network after adding
+          if (networkToSwitch && networkToSwitch.chainId !== selectedNetwork.chainId) {
+            const networkKey = Object.keys(SUPPORTED_NETWORKS).find(
+              key => SUPPORTED_NETWORKS[key].chainId === networkToSwitch.chainId
+            );
+            if (networkKey) {
+              setSelectedNetwork(networkToSwitch);
+              localStorage.setItem('selectedNetwork', networkKey);
+            }
+          }
         } catch (addError) {
           console.error('Error adding network:', addError);
+          throw addError;
         }
+      } else {
+        throw switchError;
       }
+    }
+  };
+
+  const switchToNetwork = async (networkKey) => {
+    const network = SUPPORTED_NETWORKS[networkKey];
+    if (!network) {
+      throw new Error('Network not supported');
+    }
+    
+    if (network.chainId === selectedNetwork.chainId) {
+      return; // Already on this network
+    }
+    
+    if (window.ethereum && isConnected) {
+      await switchNetwork(network);
+      // Reload to apply new network settings
+      window.location.reload();
+    } else {
+      // If not connected, just update the selected network
+      setSelectedNetwork(network);
+      localStorage.setItem('selectedNetwork', networkKey);
     }
   };
 
@@ -163,6 +214,10 @@ export function WalletProvider({ children }) {
     disconnectWallet,
     isConnected: !!account,
     isCorrectNetwork: chainId === TARGET_CHAIN_ID,
+    selectedNetwork,
+    supportedNetworks: SUPPORTED_NETWORKS,
+    switchNetwork,
+    switchToNetwork,
   };
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;

@@ -1,13 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
 
 function Navbar() {
-  const { account, connectWallet, disconnectWallet, isConnected, isCorrectNetwork } = useWallet();
+  const { account, connectWallet, disconnectWallet, isConnected, isCorrectNetwork, selectedNetwork, supportedNetworks, switchToNetwork } = useWallet();
+  const [showChainSelector, setShowChainSelector] = useState(false);
 
   const formatAddress = (address) => {
     if (!address) return '';
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
+  const handleChainSelect = async (networkKey) => {
+    try {
+      await switchToNetwork(networkKey);
+      setShowChainSelector(false);
+    } catch (error) {
+      console.error('Error switching network:', error);
+      alert(`Failed to switch network: ${error.message}`);
+    }
   };
 
   return (
@@ -41,13 +52,59 @@ function Navbar() {
               </Link>
             </div>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center space-x-4">
+            {/* Chain Selector */}
+            <div className="relative">
+              <button
+                onClick={() => setShowChainSelector(!showChainSelector)}
+                className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center"
+              >
+                <span className="mr-2">🌐</span>
+                {selectedNetwork?.name || 'Select Chain'}
+                <span className="ml-2">▼</span>
+              </button>
+              
+              {showChainSelector && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-10" 
+                    onClick={() => setShowChainSelector(false)}
+                  ></div>
+                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg z-20 border border-gray-200 dark:border-gray-700">
+                    <div className="py-2">
+                      {Object.entries(supportedNetworks).map(([key, network]) => (
+                        <button
+                          key={key}
+                          onClick={() => handleChainSelect(key)}
+                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                            selectedNetwork?.chainId === network.chainId
+                              ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-400'
+                              : 'text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          <div className="font-medium">{network.name}</div>
+                          {!network.contractAddress && (
+                            <div className="text-xs text-yellow-600 dark:text-yellow-400">
+                              Contract not deployed
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
             {isConnected ? (
               <div className="flex items-center space-x-4">
                 {!isCorrectNetwork && (
-                  <span className="text-yellow-600 dark:text-yellow-400 text-sm">
-                    Wrong Network
-                  </span>
+                  <button
+                    onClick={() => switchToNetwork(Object.keys(supportedNetworks).find(key => supportedNetworks[key].chainId === selectedNetwork.chainId))}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-xs font-medium"
+                  >
+                    Switch Network
+                  </button>
                 )}
                 <span className="text-gray-700 dark:text-gray-300 text-sm">
                   {formatAddress(account)}

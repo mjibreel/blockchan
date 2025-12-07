@@ -4,10 +4,8 @@ import { ethers } from 'ethers';
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
-const POLYGONSCAN_URL = process.env.REACT_APP_POLYGONSCAN_URL || 'https://amoy.polygonscan.com';
-const CONTRACT_ADDRESS = process.env.REACT_APP_CONTRACT_ADDRESS || '0xf8D623Dbfa1Dd1A3c904A69323df00773827C2DA';
 
-// Note: CONTRACT_ADDRESS is set from .env, with fallback to deployed contract address
+// Note: Contract address and explorer URL are now dynamic based on selected network
 
 // Contract ABI (minimal)
 const CONTRACT_ABI = [
@@ -18,7 +16,9 @@ const CONTRACT_ABI = [
 ];
 
 function Stamp() {
-  const { account, connectWallet, isConnected, isCorrectNetwork, provider } = useWallet();
+  const { account, connectWallet, isConnected, isCorrectNetwork, provider, selectedNetwork } = useWallet();
+  const CONTRACT_ADDRESS = selectedNetwork?.contractAddress || '';
+  const BLOCK_EXPLORER_URL = selectedNetwork?.blockExplorerUrls?.[0] || 'https://amoy.polygonscan.com';
   const [file, setFile] = useState(null);
   const [isPublic, setIsPublic] = useState(true);
   const [pin, setPin] = useState('');
@@ -75,7 +75,7 @@ function Stamp() {
     }
 
     if (!isCorrectNetwork) {
-      setError('Please switch to Polygon Amoy network');
+      setError(`Please switch to ${selectedNetwork?.name || 'the correct'} network`);
       return;
     }
 
@@ -90,7 +90,7 @@ function Stamp() {
     }
 
     if (!CONTRACT_ADDRESS) {
-      setError('Contract address not configured. Please deploy the contract first.');
+      setError(`Contract not deployed on ${selectedNetwork?.name || 'selected network'}. Please deploy the contract first or select a different network.`);
       return;
     }
 
@@ -111,11 +111,14 @@ function Stamp() {
       
       // Check balance before proceeding (free check)
       const balance = await provider.getBalance(account);
-      const balanceInMatic = ethers.formatEther(balance);
-      console.log('Account balance:', balanceInMatic, 'MATIC');
+      const balanceInNative = ethers.formatEther(balance);
+      const currencySymbol = selectedNetwork?.nativeCurrency?.symbol || 'ETH';
+      console.log('Account balance:', balanceInNative, currencySymbol);
       
-      if (balanceInMatic === '0.0') {
-        throw new Error('Insufficient MATIC balance. Please get test MATIC from the faucet: https://faucet.polygon.technology/');
+      if (balanceInNative === '0.0') {
+        const currency = selectedNetwork?.nativeCurrency?.symbol || 'ETH';
+        const faucetUrl = selectedNetwork?.faucetUrl || 'https://faucet.polygon.technology/';
+        throw new Error(`Insufficient ${currency} balance. Please get test tokens from the faucet: ${faucetUrl}`);
       }
       
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
@@ -199,7 +202,7 @@ function Stamp() {
         } else if (err.message && err.message.includes('would fail')) {
           errorMessage = err.message;
       } else {
-          errorMessage = 'RPC error: The blockchain node encountered an issue. Please check: 1) You have enough MATIC for gas, 2) You\'re on Polygon Amoy network, 3) Try again in a moment.';
+          errorMessage = `RPC error: The blockchain node encountered an issue. Please check: 1) You have enough ${selectedNetwork?.nativeCurrency?.symbol || 'ETH'} for gas, 2) You're on ${selectedNetwork?.name || 'the correct'} network, 3) Try again in a moment.`;
         }
       } else if (err.reason && err.reason.includes('File already stamped')) {
         errorMessage = 'This file with this PIN has already been stamped. Try a different file or use a different PIN.';
@@ -243,8 +246,8 @@ File Name: ${result.fileName}
 File Size: ${(result.fileSize / 1024).toFixed(2)} KB
 Public: ${result.isPublic ? 'Yes' : 'No'}
 
-View on PolygonScan:
-${POLYGONSCAN_URL}/tx/${result.txHash}
+                  View on Block Explorer:
+${BLOCK_EXPLORER_URL}/tx/${result.txHash}
 
 This document proves that the file with the above hash was stamped on the blockchain at the specified timestamp.
       `;
@@ -276,7 +279,7 @@ This document proves that the file with the above hash was stamped on the blockc
         {!isCorrectNetwork && isConnected && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
             <p className="text-red-800 dark:text-red-200">
-              Please switch to Polygon Amoy network in MetaMask.
+              Please switch to {selectedNetwork ? selectedNetwork.name : 'the correct'} network in MetaMask.
             </p>
           </div>
         )}
@@ -409,7 +412,7 @@ This document proves that the file with the above hash was stamped on the blockc
                   Transaction ID:
                 </span>
                 <a
-                  href={`${POLYGONSCAN_URL}/tx/${result.txHash}`}
+                  href={`${BLOCK_EXPLORER_URL}/tx/${result.txHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="ml-2 text-blue-600 dark:text-blue-400 hover:underline"

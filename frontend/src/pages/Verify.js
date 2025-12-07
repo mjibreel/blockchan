@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
-const POLYGONSCAN_URL = process.env.REACT_APP_POLYGONSCAN_URL || 'https://amoy.polygonscan.com';
+// Default to Polygon Amoy explorer, but can be updated dynamically
+const BLOCK_EXPLORER_URL = 'https://amoy.polygonscan.com';
 
 function Verify() {
   const [file, setFile] = useState(null);
@@ -217,12 +218,12 @@ function Verify() {
                         Transaction:
                       </span>
                       <a
-                        href={`${POLYGONSCAN_URL}/tx/${result.txId}`}
+                        href={`${BLOCK_EXPLORER_URL}/tx/${result.txId}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="ml-2 text-blue-600 dark:text-blue-400 hover:underline"
                       >
-                        View on PolygonScan
+                        View on Block Explorer
                       </a>
                     </div>
                   )}
