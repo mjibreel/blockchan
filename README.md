@@ -1,70 +1,143 @@
 # 🔐 Qubic File Stamp
 
-A blockchain-based file authentication system that proves file ownership and authenticity using cryptographic hashing and smart contracts on Polygon.
+A blockchain-based file authentication system that proves file ownership and authenticity using cryptographic hashing and smart contracts on multiple EVM-compatible networks.
 
-## 🎯 What It Does
+## 📋 Table of Contents
 
-- **Upload & Stamp**: Users upload files and get a permanent blockchain timestamp
-- **Verify Authenticity**: Anyone can verify if a file is authentic and when it was created
-- **Privacy-First**: Only file hashes are stored on-chain, not the actual files
-- **Immutable Proof**: Once stamped, the record cannot be altered or deleted
-- **Public/Private Stamps**: Choose if your stamp is publicly verifiable or private
-- **Download Proof**: Get your proof as PDF or JSON
+- [Overview](#overview)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Deployment](#deployment)
+- [API Documentation](#api-documentation)
+- [Smart Contracts](#smart-contracts)
+- [Multi-Chain Support](#multi-chain-support)
+- [Contributing](#contributing)
+
+## 🎯 Overview
+
+Qubic File Stamp allows users to create immutable proof of file ownership by storing file hashes on the blockchain. Only cryptographic hashes are stored on-chain—never the actual file content—ensuring privacy while providing permanent verification.
+
+### How It Works
+
+1. **Upload File**: User uploads a file and optionally adds a PIN
+2. **Generate Hash**: System creates a SHA-256 hash (with PIN if provided)
+3. **Stamp on Blockchain**: Hash is permanently stored on-chain with timestamp and owner
+4. **Verify Anytime**: Anyone can verify file authenticity by re-hashing and checking blockchain
+
+## ✨ Features
+
+### Core Features
+- ✅ **File Stamping**: Upload files and get blockchain timestamps
+- ✅ **File Verification**: Verify file authenticity on-chain
+- ✅ **Transaction History**: View, search, and download transaction history
+- ✅ **Multi-Chain Support**: Deploy and use on multiple EVM networks
+- ✅ **PIN Protection**: Optional PIN-based double authentication
+- ✅ **Public/Private Stamps**: Choose visibility of your stamps
+- ✅ **Export History**: Download transaction history as TXT or JSON
+
+### Security Features
+- 🔒 Privacy-first: Only hashes stored, never file content
+- 🔒 Immutable records: Once stamped, cannot be altered
+- 🔒 PIN-based protection: Additional security layer
+- 🔒 Wallet-based ownership: Crypto wallet authentication
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **React.js** 18+ - UI framework
+- **React Router** v6 - Client-side routing
+- **Ethers.js** v6 - Blockchain interactions
+- **Tailwind CSS** - Styling
+- **Axios** - HTTP client
+
+### Backend
+- **Node.js** - Runtime
+- **Express.js** - Web framework
+- **Ethers.js** - Blockchain interactions
+- **Supabase** - PostgreSQL database
+
+### Blockchain
+- **Solidity** ^0.8.20 - Smart contracts
+- **Hardhat** - Development framework
+- **Polygon Amoy** (Testnet) - Primary network
+- **Base Sepolia** (Testnet) - Supported
+- **Ethereum Sepolia** (Testnet) - Supported
+- **Arbitrum Sepolia** (Testnet) - Supported
+
+### Deployment
+- **Frontend**: Netlify
+- **Backend**: Vercel (Serverless Functions)
+- **Contracts**: Deployed per network
 
 ## 🏗️ Architecture
 
 ```
-User Uploads File
-    ↓
-Backend generates SHA-256 hash
-    ↓
-Smart contract stores: hash + owner + timestamp
-    ↓
-User receives proof of authenticity
-    ↓
-Anyone can verify by re-hashing and checking blockchain
+┌─────────────┐
+│   Frontend  │ (React + Ethers.js)
+│   (Netlify) │
+└──────┬──────┘
+       │ HTTP/REST
+       ↓
+┌─────────────┐
+│   Backend   │ (Express API)
+│   (Vercel)  │
+└──────┬──────┘
+       │
+       ├──→ Supabase (PostgreSQL)
+       │    └── Stores stamp metadata
+       │
+       └──→ Blockchain (EVM Networks)
+            └── Stores file hashes
 ```
 
-## 🛠️ Tech Stack
+### Data Flow
 
-- **Frontend**: React.js + Tailwind CSS + Ethers.js
-- **Backend**: Node.js + Express
-- **Database**: Supabase (PostgreSQL)
-- **Blockchain**: Polygon Amoy Testnet
-- **Smart Contract**: Solidity (Hardhat)
-- **Web3**: Ethers.js v6
+1. User uploads file → Frontend generates hash
+2. Frontend → Backend API: Submit hash + metadata
+3. Backend → Blockchain: Store hash on-chain
+4. Backend → Supabase: Store metadata (optional)
+5. Transaction receipt → User
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
 - Node.js 18+
-- Supabase account (free tier)
+- npm or yarn
 - MetaMask browser extension
-- Alchemy account (for RPC)
-- Test MATIC (from Polygon faucet)
+- Supabase account (free tier)
+- Testnet tokens (for transactions)
 
-### Step 1: Clone & Install
+### Installation
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/mjibreel/blockchan.git
+cd blockchan
+```
+
+2. **Install dependencies**
 
 ```bash
-# Install contract dependencies
+# Contracts
 cd contracts
 npm install
 
-# Install backend dependencies
+# Backend
 cd ../backend
 npm install
 
-# Install frontend dependencies
+# Frontend
 cd ../frontend
 npm install
 ```
 
-### Step 2: Set Up Supabase
+3. **Set up Supabase**
 
-1. Go to https://supabase.com/ and create a project
-2. Copy your Project URL and Service Role Key
-3. Go to SQL Editor and run:
+Create a new project at [supabase.com](https://supabase.com) and run:
 
 ```sql
 CREATE TABLE stamps (
@@ -83,158 +156,376 @@ CREATE INDEX idx_file_hash ON stamps(file_hash);
 CREATE INDEX idx_owner_address ON stamps(owner_address);
 ```
 
-### Step 3: Configure Environment Variables
+4. **Configure environment variables**
 
-**Backend** (`backend/.env`):
+See [Configuration](#configuration) section below.
+
+5. **Deploy smart contract**
+
+```bash
+cd contracts
+npm run deploy:amoy  # Or deploy:base-sepolia, etc.
+```
+
+6. **Start development servers**
+
+```bash
+# Terminal 1 - Backend
+cd backend
+npm start
+
+# Terminal 2 - Frontend
+cd frontend
+npm start
+```
+
+Visit `http://localhost:3000`
+
+## ⚙️ Configuration
+
+### Backend Environment Variables (`backend/.env`)
+
 ```env
 PORT=3001
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_KEY=your_service_role_key
 PRIVATE_KEY=your_wallet_private_key
-RPC_URL=https://polygon-mumbai.g.alchemy.com/v2/YOUR_KEY
-CONTRACT_ADDRESS=0x... (after deployment)
+RPC_URL=https://rpc-amoy.polygon.technology
+CHAIN_ID=80002
+CONTRACT_ADDRESS=0x...
 ```
 
-**Frontend** (`frontend/.env`):
+### Frontend Environment Variables (`frontend/.env`)
+
 ```env
 REACT_APP_API_URL=http://localhost:3001
 REACT_APP_CHAIN_ID=80002
 REACT_APP_POLYGONSCAN_URL=https://amoy.polygonscan.com
+REACT_APP_CONTRACT_ADDRESS=0x...
+
+# Multi-chain (optional)
+REACT_APP_CONTRACT_ADDRESS_POLYGON=0x...
+REACT_APP_CONTRACT_ADDRESS_BASE=0x...
+REACT_APP_CONTRACT_ADDRESS_ETHEREUM=0x...
+REACT_APP_CONTRACT_ADDRESS_ARBITRUM=0x...
 ```
 
-**Contracts** (`contracts/.env`):
+### Contracts Environment Variables (`contracts/.env`)
+
 ```env
-RPC_URL=https://polygon-mumbai.g.alchemy.com/v2/YOUR_KEY
+RPC_URL=https://rpc-amoy.polygon.technology
 PRIVATE_KEY=your_wallet_private_key
 ```
 
-### Step 4: Deploy Smart Contract
+## 📦 Deployment
+
+### Frontend (Netlify)
+
+1. Connect GitHub repository to Netlify
+2. Configure build settings:
+   - Base directory: `frontend`
+   - Build command: `npm install && npm run build`
+   - Publish directory: `build`
+3. Add environment variables in Netlify dashboard
+4. Deploy automatically on push to `main`
+
+### Backend (Vercel)
+
+1. Connect GitHub repository to Vercel
+2. Root directory: `backend`
+3. Framework preset: Other
+4. Build command: (none needed)
+5. Output directory: (none)
+6. Add environment variables in Vercel dashboard
+7. Deploy automatically on push to `main`
+
+### Smart Contracts
 
 ```bash
 cd contracts
-npm run compile
+
+# Deploy to Polygon Amoy
 npm run deploy:amoy
+
+# Deploy to Base Sepolia
+npm run deploy:base-sepolia
+
+# Deploy to Ethereum Sepolia
+npm run deploy:ethereum-sepolia
+
+# Deploy to Arbitrum Sepolia
+npm run deploy:arbitrum-sepolia
 ```
 
-Copy the contract address to `backend/.env` as `CONTRACT_ADDRESS`.
+After deployment, copy contract addresses to frontend `.env` file.
 
-### Step 5: Start the Application
+## 📚 API Documentation
 
-**Terminal 1 - Backend:**
-```bash
-cd backend
-npm start
+### Base URL
+- Local: `http://localhost:3001`
+- Production: Your Vercel backend URL
+
+### Endpoints
+
+#### POST `/api/stamp`
+Stamp a file hash on the blockchain.
+
+**Request:**
+```javascript
+FormData {
+  file: File,
+  pin?: string,  // Optional PIN
+  isPublic?: boolean  // Default: true
+}
 ```
 
-**Terminal 2 - Frontend:**
-```bash
-cd frontend
-npm start
+**Response:**
+```json
+{
+  "success": true,
+  "txHash": "0x...",
+  "blockNumber": 12345678,
+  "fileHash": "0x...",
+  "contractAddress": "0x..."
+}
 ```
 
-Visit http://localhost:3000
+#### POST `/api/verify`
+Verify if a file hash exists on the blockchain.
 
-## 📁 Project Structure
-
-```
-block/
-├── contracts/          # Smart contracts
-│   ├── contracts/      # Solidity files
-│   ├── scripts/        # Deployment scripts
-│   └── hardhat.config.js
-│
-├── backend/            # Express API
-│   ├── routes/         # API routes
-│   ├── utils/          # Hashing, blockchain, Supabase
-│   └── server.js
-│
-├── frontend/           # React app
-│   ├── src/
-│   │   ├── components/ # UI components
-│   │   ├── pages/      # Home, Stamp, Verify
-│   │   ├── context/   # Wallet context
-│   │   └── App.js
-│   └── public/
-│
-├── PRD.md              # Product Requirements
-├── SETUP_GUIDE.md      # Detailed setup guide
-└── README.md           # This file
+**Request:**
+```javascript
+FormData {
+  file: File,
+  pin?: string  // Optional PIN
+}
 ```
 
-## 🎯 Features
+**Response:**
+```json
+{
+  "exists": true,
+  "owner": "0x...",
+  "timestamp": 1234567890,
+  "isPublic": true,
+  "txHash": "0x...",
+  "blockNumber": 12345678
+}
+```
 
-- ✅ File upload and SHA-256 hashing
-- ✅ Blockchain timestamping on Polygon
-- ✅ Ownership verification
-- ✅ Public file verification (no wallet needed)
-- ✅ Public/Private stamp toggle
-- ✅ Download proof as JSON/PDF
-- ✅ Transaction history on PolygonScan
-- ✅ Responsive UI with dark mode support
-- ✅ MetaMask wallet integration
+#### GET `/api/stamps/:address`
+Get all stamps for a wallet address (from Supabase).
 
-## 🔧 API Endpoints
+**Response:**
+```json
+{
+  "address": "0x...",
+  "count": 5,
+  "stamps": [...]
+}
+```
 
-- `POST /api/stamp` - Upload file and stamp on blockchain
-- `POST /api/verify` - Verify file authenticity
-- `GET /api/stamps/:address` - Get all stamps for an address
-- `GET /health` - Health check
+#### GET `/api/history/:address`
+Get transaction history for a wallet address (from blockchain).
 
-## 📝 Smart Contract Functions
+**Response:**
+```json
+{
+  "address": "0x...",
+  "count": 5,
+  "transactions": [
+    {
+      "txHash": "0x...",
+      "fileHashHex": "0x...",
+      "owner": "0x...",
+      "timestamp": 1234567890000,
+      "date": "2024-01-01T00:00:00.000Z",
+      "isPublic": true,
+      "blockNumber": 12345678,
+      "gasUsed": "123456",
+      "status": "success"
+    }
+  ]
+}
+```
 
-- `stampFile(bytes32 fileHash, bool isPublic)` - Store file hash
-- `verifyFile(bytes32 fileHash)` - Verify if hash exists
-- `getStampInfo(bytes32 fileHash)` - Get complete stamp info
-- `fileExists(bytes32 fileHash)` - Boolean check
+#### GET `/health`
+Health check endpoint.
 
-## 🏆 Hackathon Pitch Points
+**Response:**
+```json
+{
+  "status": "ok",
+  "message": "Qubic File Stamp API is running"
+}
+```
 
-1. **Problem**: How do you prove a file is authentic and when it was created?
-2. **Solution**: Blockchain timestamping with cryptographic hashing
-3. **Why Blockchain**: Immutable, decentralized, no single point of failure
-4. **Privacy**: Only hashes stored, not files
-5. **Cost**: Polygon = near-zero gas fees
-6. **Demo**: Show upload → stamp → verify → PolygonScan link
+## 🔷 Smart Contracts
 
-## 🔒 Security & Privacy
+### Contract: `FileStamp.sol`
 
-- ✅ Only hashes stored on-chain (not files)
-- ✅ Private stamps require wallet to verify
-- ✅ No file content stored in database
-- ✅ Wallet connection via MetaMask (secure)
-- ✅ Input validation on file uploads
+**Location:** `contracts/contracts/FileStamp.sol`
 
-## 📚 Documentation
+**Functions:**
 
-- See `PRD.md` for full product requirements
-- See `SETUP_GUIDE.md` for detailed setup instructions
+- `stampFile(bytes32 fileHash, bool isPublic)` - Store a file hash on-chain
+- `verifyFile(bytes32 fileHash)` - Verify if a file hash exists
+- `getStampInfo(bytes32 fileHash)` - Get complete stamp information
+- `fileExists(bytes32 fileHash)` - Simple boolean check
+
+**Events:**
+
+- `FileStamped(bytes32 indexed fileHash, address indexed owner, uint256 timestamp, bool isPublic)`
+
+**Security:**
+- Prevents duplicate stamps (same hash can only be stamped once)
+- Records timestamp and owner address
+- Supports public/private visibility
+
+## 🌐 Multi-Chain Support
+
+The application supports multiple EVM-compatible networks:
+
+### Supported Networks
+
+1. **Polygon Amoy** (Testnet)
+   - Chain ID: 80002
+   - Faucet: https://faucet.polygon.technology/
+   - Status: ✅ Deployed
+
+2. **Base Sepolia** (Testnet)
+   - Chain ID: 84532
+   - Faucet: https://www.coinbase.com/faucets/base-ethereum-goerli-faucet
+   - Status: ⚠️ Contract deployment required
+
+3. **Ethereum Sepolia** (Testnet)
+   - Chain ID: 11155111
+   - Faucet: https://www.alchemy.com/faucets/ethereum-sepolia
+   - Status: ⚠️ Contract deployment required
+
+4. **Arbitrum Sepolia** (Testnet)
+   - Chain ID: 421614
+   - Faucet: https://faucet.quicknode.com/arbitrum/sepolia
+   - Status: ⚠️ Contract deployment required
+
+### Switching Networks
+
+Users can switch networks using the chain selector in the navbar (🌐 icon). The application will:
+1. Prompt MetaMask to switch networks
+2. Update contract addresses dynamically
+3. Reload with new network settings
+
+### Adding New Networks
+
+1. Add network config to `frontend/src/config/networks.js`
+2. Add network to Hardhat config (`contracts/hardhat.config.js`)
+3. Deploy contract to new network
+4. Add contract address to frontend `.env`
+5. Update backend if needed
+
+## 📖 Usage Guide
+
+### Stamping a File
+
+1. Connect your MetaMask wallet
+2. Navigate to "Stamp" page
+3. Select a file
+4. (Optional) Enter a PIN
+5. Choose public/private visibility
+6. Click "Stamp File on Blockchain"
+7. Approve transaction in MetaMask
+8. Wait for confirmation
+
+### Verifying a File
+
+1. Navigate to "Verify" page
+2. Upload the file you want to verify
+3. (If used) Enter the same PIN
+4. Click "Verify File"
+5. View verification results
+
+### Viewing History
+
+1. Connect your wallet
+2. Navigate to "History" page
+3. View all your transactions
+4. Search by hash, address, or date
+5. Download as TXT or JSON
+
+## 🔐 Security Considerations
+
+### Private Keys
+- ⚠️ **NEVER** commit private keys to Git
+- Use environment variables only
+- Use separate keys for testnet/mainnet
+- Consider using hardware wallets for mainnet
+
+### PIN Security
+- PINs are combined with file hash before hashing
+- Different PINs create different hashes for same file
+- PINs are NOT stored anywhere
+- User must remember their PIN to verify
+
+### Smart Contract Security
+- Contract prevents duplicate stamps
+- Timestamps are set by blockchain (immutable)
+- Ownership cannot be transferred
+- Public/private flag is set at creation
 
 ## 🐛 Troubleshooting
 
-### "Insufficient funds" error
-→ Get more test MATIC from https://faucet.polygon.technology/
+### Common Issues
 
-### "Network error" when connecting
-→ Check RPC URL in .env
-→ Verify Alchemy API key
+**"Insufficient funds" error**
+- Get testnet tokens from faucet
+- Check wallet balance
+- Ensure correct network is selected
 
-### "Contract not found"
-→ Make sure contract is deployed
-→ Check CONTRACT_ADDRESS in backend .env
+**"Contract not deployed" message**
+- Deploy contract to selected network
+- Add contract address to `.env`
+- Restart application
 
-### Supabase connection fails
-→ Check SUPABASE_URL and SUPABASE_SERVICE_KEY
-→ Verify table exists in Supabase dashboard
+**Transaction timeout**
+- Check RPC endpoint
+- Increase gas limit if needed
+- Try again later
+
+**MetaMask connection issues**
+- Refresh page
+- Disconnect and reconnect wallet
+- Clear browser cache
+- Check MetaMask extension
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Guidelines
+
+- Follow existing code style
+- Add comments for complex logic
+- Test on testnet before mainnet
+- Update documentation for new features
 
 ## 📝 License
 
-MIT
+MIT License - see LICENSE file for details
 
-## 🚀 Built For Hackathon
+## 🔗 Links
 
-This project was built for a 48-hour hackathon. Focus on working demo over extra features.
+- **Live Site**: https://mjibreel-blockchan.netlify.app
+- **GitHub**: https://github.com/mjibreel/blockchan
+- **Polygon Amoy Explorer**: https://amoy.polygonscan.com
+
+## 📧 Support
+
+For issues, questions, or contributions, please open an issue on GitHub.
 
 ---
 
-**Ready to stamp your files? Let's go! 🔐**
-
+**Built with ❤️ for immutable file authentication**
