@@ -50,52 +50,56 @@ router.post('/', upload.single('file'), async (req, res, next) => {
       });
     }
 
-    // Check if file already exists in database
-    const { data: existingStamp } = await supabase
-      .from('stamps')
-      .select('*')
-      .eq('file_hash', fileHash)
-      .single();
+    // Check if file already exists in database (if Supabase is configured)
+    if (supabase) {
+      const { data: existingStamp } = await supabase
+        .from('stamps')
+        .select('*')
+        .eq('file_hash', fileHash)
+        .single();
 
-    if (existingStamp) {
-      return res.status(409).json({
-        error: 'File already stamped',
-        existingStamp: {
+      if (existingStamp) {
+        return res.status(409).json({
+          error: 'File already stamped',
+          existingStamp: {
+            fileHash,
+            ownerAddress: existingStamp.owner_address,
+            timestamp: existingStamp.timestamp,
+            txId: existingStamp.tx_id,
+          },
+        });
+      }
+
+      // Save to database (transaction already on blockchain, signed by user)
+      const { data: stampData, error: dbError } = await supabase
+        .from('stamps')
+        .insert({
+          file_hash: fileHash,
+          owner_address: blockchainResult.owner, // Use owner from blockchain, not from request
+          file_name: file.originalname,
+          file_size: file.size,
+          timestamp: new Date(blockchainResult.timestamp).toISOString(),
+          tx_id: txHash,
+          is_public: blockchainResult.isPublic,
+        })
+        .select()
+        .single();
+
+      if (dbError) {
+        console.error('Database error:', dbError);
+        // Transaction is already on blockchain, but DB save failed
+        // Return success with warning
+        return res.status(201).json({
+          success: true,
+          warning: 'File stamped on blockchain but database save failed',
           fileHash,
-          ownerAddress: existingStamp.owner_address,
-          timestamp: existingStamp.timestamp,
-          txId: existingStamp.tx_id,
-        },
-      });
-    }
-
-    // Save to database (transaction already on blockchain, signed by user)
-    const { data: stampData, error: dbError } = await supabase
-      .from('stamps')
-      .insert({
-        file_hash: fileHash,
-        owner_address: blockchainResult.owner, // Use owner from blockchain, not from request
-        file_name: file.originalname,
-        file_size: file.size,
-        timestamp: new Date(blockchainResult.timestamp).toISOString(),
-        tx_id: txHash,
-        is_public: blockchainResult.isPublic,
-      })
-      .select()
-      .single();
-
-    if (dbError) {
-      console.error('Database error:', dbError);
-      // Transaction is already on blockchain, but DB save failed
-      // Return success with warning
-      return res.status(201).json({
-        success: true,
-        warning: 'File stamped on blockchain but database save failed',
-        fileHash,
-        txHash: txHash,
-        ownerAddress: blockchainResult.owner,
-        timestamp: new Date(blockchainResult.timestamp).toISOString(),
-      });
+          txHash: txHash,
+          ownerAddress: blockchainResult.owner,
+          timestamp: new Date(blockchainResult.timestamp).toISOString(),
+        });
+      }
+    } else {
+      console.log('⚠️  Supabase not configured - skipping database save');
     }
 
     // Success response

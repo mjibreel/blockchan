@@ -53,11 +53,15 @@ router.post('/', upload.single('file'), async (req, res, next) => {
     }
 
     // Get additional info from database if available
-    const { data: dbStamp } = await supabase
-      .from('stamps')
-      .select('*')
-      .eq('file_hash', fileHash)
-      .single();
+    let dbStamp = null;
+    if (supabase) {
+      const { data } = await supabase
+        .from('stamps')
+        .select('*')
+        .eq('file_hash', fileHash)
+        .single();
+      dbStamp = data;
+    }
 
     // Format response
     const response = {

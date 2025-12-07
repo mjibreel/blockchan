@@ -14,6 +14,12 @@ router.get('/:address', async (req, res, next) => {
       return res.status(400).json({ error: 'Invalid address format' });
     }
 
+    if (!supabase) {
+      return res.status(503).json({ 
+        error: 'Database not configured. Supabase is required for this endpoint.' 
+      });
+    }
+
     const { data: stamps, error } = await supabase
       .from('stamps')
       .select('*')
