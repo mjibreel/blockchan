@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+// Get API URL and ensure it has https:// protocol
+let API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+// Auto-add https:// if missing (common mistake in env vars)
+if (API_URL && !API_URL.startsWith('http://') && !API_URL.startsWith('https://')) {
+  API_URL = `https://${API_URL}`;
+}
 // Default to Polygon Amoy explorer, but can be updated dynamically
 const BLOCK_EXPLORER_URL = 'https://amoy.polygonscan.com';
 

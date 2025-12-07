@@ -2,7 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '../context/WalletContext';
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+// Get API URL and ensure it has https:// protocol
+let API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+// Auto-add https:// if missing (common mistake in env vars)
+if (API_URL && !API_URL.startsWith('http://') && !API_URL.startsWith('https://')) {
+  API_URL = `https://${API_URL}`;
+}
 
 // Debug: Log API URL (remove in production if needed)
 console.log('API_URL from environment:', API_URL);
