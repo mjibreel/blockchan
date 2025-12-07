@@ -109,19 +109,42 @@ async function verifyFileOnChain(fileHash) {
 /**
  * Get transaction history for a specific address
  * @param {string} address - Wallet address to get history for
- * @param {number} fromBlock - Starting block number (optional, defaults to contract deployment or 0)
+ * @param {number} fromBlock - Starting block number (optional, defaults to reasonable recent block)
  * @returns {Promise<Array>} - Array of transaction history objects
  */
-async function getTransactionHistory(address, fromBlock = 0) {
+async function getTransactionHistory(address, fromBlock = null) {
   try {
     const contract = getContract();
     const provider = getProvider();
     
+    // If fromBlock not specified, use a reasonable starting point (last ~30 days of blocks)
+    // Polygon Amoy produces ~2 blocks/second, so ~30 days = 5,184,000 seconds = ~2,592,000 blocks
+    // Use last 3,000,000 blocks as a safe range (about 35 days)
+    let startBlock = fromBlock;
+    if (startBlock === null || startBlock === 0) {
+      try {
+        const currentBlock = await provider.getBlockNumber();
+        // Go back 3,000,000 blocks (about 35 days worth)
+        startBlock = Math.max(0, currentBlock - 3000000);
+        console.log(`Using starting block: ${startBlock} (current: ${currentBlock})`);
+      } catch (blockError) {
+        console.warn('Could not get current block, using block 0:', blockError.message);
+        startBlock = 0;
+      }
+    }
+    
     // Filter by owner address (indexed parameter)
     const filter = contract.filters.FileStamped(null, address);
     
-    // Query events from contract deployment or specified block
-    const events = await contract.queryFilter(filter, fromBlock, 'latest');
+    console.log(`Querying events for address ${address} from block ${startBlock} to latest...`);
+    
+    // Query events with timeout handling
+    const events = await Promise.race([
+      contract.queryFilter(filter, startBlock, 'latest'),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Query timeout: Request took too long')), 30000) // 30 second timeout
+      )
+    ]);
     
     // Fetch transaction receipts for more details
     const transactions = await Promise.all(
@@ -156,9 +179,63 @@ async function getTransactionHistory(address, fromBlock = 0) {
     // Sort by timestamp (newest first)
     transactions.sort((a, b) => b.timestamp - a.timestamp);
     
+    console.log(`Found ${transactions.length} transactions for address ${address}`);
     return transactions;
   } catch (error) {
     console.error('Error fetching transaction history:', error);
+    
+    // If timeout or RPC error, try a smaller block range
+    if (error.message && (error.message.includes('timeout') || error.message.includes('timed out') || error.code === -32002)) {
+      console.log('Timeout detected, trying smaller block range...');
+      
+      try {
+        const provider = getProvider();
+        const currentBlock = await provider.getBlockNumber();
+        // Try last 100,000 blocks (about 1 day)
+        const recentBlock = Math.max(0, currentBlock - 100000);
+        console.log(`Retrying with smaller range: ${recentBlock} to ${currentBlock}`);
+        
+        const contract = getContract();
+        const filter = contract.filters.FileStamped(null, address);
+        const events = await contract.queryFilter(filter, recentBlock, 'latest');
+        
+        // Process events (same as before)
+        const transactions = await Promise.all(
+          events.map(async (event) => {
+            const receipt = await provider.getTransactionReceipt(event.transactionHash);
+            
+            let fileHashHex;
+            if (typeof event.args.fileHash === 'string') {
+              fileHashHex = event.args.fileHash;
+            } else {
+              fileHashHex = ethers.hexlify(event.args.fileHash);
+            }
+            
+            return {
+              txHash: event.transactionHash,
+              fileHash: event.args.fileHash,
+              fileHashHex: fileHashHex,
+              owner: event.args.owner,
+              timestamp: Number(event.args.timestamp) * 1000,
+              date: new Date(Number(event.args.timestamp) * 1000).toISOString(),
+              isPublic: event.args.isPublic,
+              blockNumber: event.blockNumber,
+              blockHash: event.blockHash,
+              gasUsed: receipt.gasUsed.toString(),
+              status: receipt.status === 1 ? 'success' : 'failed',
+            };
+          })
+        );
+        
+        transactions.sort((a, b) => b.timestamp - a.timestamp);
+        console.log(`Found ${transactions.length} recent transactions (last ~100k blocks)`);
+        return transactions;
+      } catch (retryError) {
+        console.error('Retry also failed:', retryError);
+        throw new Error('Unable to fetch transaction history. The blockchain query is taking too long. Please try again later.');
+      }
+    }
+    
     throw error;
   }
 }
