@@ -195,8 +195,14 @@ function Stamp() {
         // Backend failed, but blockchain transaction succeeded - that's what matters!
         console.warn('Backend API call failed (transaction still succeeded on blockchain):', backendError);
         // Set warning but continue - blockchain transaction is what matters
-        if (backendError.code === 'ECONNREFUSED' || backendError.message?.includes('ERR_CONNECTION_REFUSED') || 
-            backendError.code === 'ERR_NETWORK' || backendError.message?.includes('Network Error')) {
+        const isConnectionError = backendError.code === 'ECONNREFUSED' || 
+                                  backendError.code === 'ERR_NETWORK' ||
+                                  backendError.message?.includes('ERR_CONNECTION_REFUSED') || 
+                                  backendError.message?.includes('Network Error') ||
+                                  backendError.message?.includes('Failed to fetch') ||
+                                  (backendError.response?.status === 0);
+        
+        if (isConnectionError) {
           setBackendWarning('⚠️ Backend server is offline. Your file was successfully stamped on the blockchain, but metadata could not be saved to the database. You can still verify your file using the transaction hash below.');
         } else {
           setBackendWarning('⚠️ Backend API call failed. Your file was successfully stamped on the blockchain, but some features may be limited.');
@@ -228,11 +234,20 @@ function Stamp() {
       });
     } catch (err) {
       console.error('Error stamping file:', err);
+      
+      // Don't show error if transaction already succeeded - this shouldn't happen, but just in case
+      if (result && result.txHash) {
+        console.warn('Error occurred after transaction succeeded:', err);
+        return; // Don't overwrite success with error
+      }
+      
       let errorMessage = 'Failed to stamp file. Please try again.';
       
       // Check if this is a network/connection error (backend offline)
-      if (err.code === 'ECONNREFUSED' || err.message?.includes('ERR_CONNECTION_REFUSED') || 
-          err.message?.includes('Network Error') || err.code === 'ERR_NETWORK') {
+      if (err.code === 'ECONNREFUSED' || err.code === 'ERR_NETWORK' ||
+          err.message?.includes('ERR_CONNECTION_REFUSED') || 
+          err.message?.includes('Network Error') ||
+          err.message?.includes('Failed to fetch')) {
         errorMessage = 'Cannot connect to backend server. Please ensure the backend is running. If you just deployed to blockchain, check your transaction on the block explorer.';
       } else if (err.code === 'ACTION_REJECTED') {
         errorMessage = 'Transaction was rejected by user. Please try again.';
@@ -249,7 +264,7 @@ function Stamp() {
         errorMessage = 'This file with this PIN has already been stamped. Try a different file or use a different PIN.';
       } else if (err.message && err.message.includes('File already stamped')) {
         errorMessage = 'This file with this PIN has already been stamped. Try a different file or use a different PIN.';
-      } else if (err.message && err.message.length > 0 && err.message !== 'eg') {
+      } else if (err.message && typeof err.message === 'string' && err.message.length > 2 && err.message !== 'eg') {
         // Filter out meaningless error messages
         errorMessage = err.message;
       } else if (err.response?.data?.error) {
