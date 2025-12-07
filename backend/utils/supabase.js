@@ -1,13 +1,17 @@
 const { createClient } = require('@supabase/supabase-js');
 
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
-  throw new Error('Missing Supabase environment variables');
-}
+// Make Supabase optional - backend can work without it (will just skip database operations)
+let supabase = null;
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+  supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY
+  );
+  console.log('✅ Supabase connected');
+} else {
+  console.warn('⚠️  Supabase not configured - database features will be disabled');
+}
 
 module.exports = supabase;
 
