@@ -39,11 +39,15 @@ export function WalletProvider({ children }) {
 
   const handleAccountsChanged = useCallback((accounts) => {
     if (accounts.length === 0) {
-      disconnectWallet();
-    } else {
+      // User disconnected in MetaMask - clear our state
+      setAccount(null);
+      setProvider(null);
+      setChainId(null);
+    } else if (account && accounts[0] !== account) {
+      // User switched accounts in MetaMask - update to new account
       setAccount(accounts[0]);
     }
-  }, []);
+  }, [account]);
 
   const handleChainChanged = useCallback((chainId) => {
     setChainId(Number(chainId));
@@ -89,8 +93,15 @@ export function WalletProvider({ children }) {
 
     setIsConnecting(true);
     try {
+      // Request accounts - this will show MetaMask popup for user to select/confirm account
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      
+      if (!accounts || accounts.length === 0) {
+        setIsConnecting(false);
+        return false;
+      }
+
       const provider = new ethers.BrowserProvider(window.ethereum);
-      const accounts = await provider.send('eth_requestAccounts', []);
       const network = await provider.getNetwork();
       const currentChainId = Number(network.chainId);
 
