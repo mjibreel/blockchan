@@ -15,19 +15,25 @@ export function WalletProvider({ children }) {
 
   const TARGET_CHAIN_ID = parseInt(process.env.REACT_APP_CHAIN_ID || '80002'); // Polygon Amoy
 
-  const disconnectWallet = () => {
-    setAccount(null);
-    setProvider(null);
-    setChainId(null);
-    // Clear any stored connection state
-    if (window.ethereum) {
-      // Disconnect by removing authorization (if supported)
-      try {
-        // Note: MetaMask doesn't have a disconnect method, but clearing state is enough
-        // The user will need to reconnect manually next time
-      } catch (error) {
-        console.log('Disconnected wallet');
+  const disconnectWallet = async () => {
+    try {
+      // Clear all state
+      setAccount(null);
+      setProvider(null);
+      setChainId(null);
+      
+      // Try to disconnect from MetaMask (if supported)
+      if (window.ethereum && window.ethereum.disconnect) {
+        await window.ethereum.disconnect();
       }
+      
+      console.log('Wallet disconnected successfully');
+    } catch (error) {
+      // Even if disconnect fails, clear the state
+      setAccount(null);
+      setProvider(null);
+      setChainId(null);
+      console.log('Wallet disconnected (state cleared)');
     }
   };
 
