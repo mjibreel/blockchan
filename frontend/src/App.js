@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Stamp from './pages/Stamp';
 import Verify from './pages/Verify';
+import History from './pages/History';
 import { WalletProvider } from './context/WalletContext';
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/stamp" element={<Stamp />} />
             <Route path="/verify" element={<Verify />} />
+            <Route path="/history" element={<History />} />
           </Routes>
         </div>
       </Router>

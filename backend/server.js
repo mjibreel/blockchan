@@ -5,6 +5,7 @@ require('dotenv').config();
 const stampRoutes = require('./routes/stamp');
 const verifyRoutes = require('./routes/verify');
 const stampsRoutes = require('./routes/stamps');
+const historyRoutes = require('./routes/history');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -18,6 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/stamp', stampRoutes);
 app.use('/api/verify', verifyRoutes);
 app.use('/api/stamps', stampsRoutes);
+app.use('/api/history', historyRoutes);
 
 // Root route
 app.get('/', (req, res) => {
@@ -28,7 +30,8 @@ app.get('/', (req, res) => {
       health: '/health',
       stamp: '/api/stamp',
       verify: '/api/verify',
-      stamps: '/api/stamps'
+      stamps: '/api/stamps',
+      history: '/api/history/:address'
     }
   });
 });

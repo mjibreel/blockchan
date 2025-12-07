@@ -106,11 +106,69 @@ async function verifyFileOnChain(fileHash) {
   }
 }
 
+/**
+ * Get transaction history for a specific address
+ * @param {string} address - Wallet address to get history for
+ * @param {number} fromBlock - Starting block number (optional, defaults to contract deployment or 0)
+ * @returns {Promise<Array>} - Array of transaction history objects
+ */
+async function getTransactionHistory(address, fromBlock = 0) {
+  try {
+    const contract = getContract();
+    const provider = getProvider();
+    
+    // Filter by owner address (indexed parameter)
+    const filter = contract.filters.FileStamped(null, address);
+    
+    // Query events from contract deployment or specified block
+    const events = await contract.queryFilter(filter, fromBlock, 'latest');
+    
+    // Fetch transaction receipts for more details
+    const transactions = await Promise.all(
+      events.map(async (event) => {
+        const receipt = await provider.getTransactionReceipt(event.transactionHash);
+        const block = await provider.getBlock(event.blockNumber);
+        
+        // Convert fileHash to hex string (bytes32 might be Uint8Array or hex string)
+        let fileHashHex;
+        if (typeof event.args.fileHash === 'string') {
+          fileHashHex = event.args.fileHash;
+        } else {
+          fileHashHex = ethers.hexlify(event.args.fileHash);
+        }
+        
+        return {
+          txHash: event.transactionHash,
+          fileHash: event.args.fileHash,
+          fileHashHex: fileHashHex,
+          owner: event.args.owner,
+          timestamp: Number(event.args.timestamp) * 1000, // Convert to milliseconds
+          date: new Date(Number(event.args.timestamp) * 1000).toISOString(),
+          isPublic: event.args.isPublic,
+          blockNumber: event.blockNumber,
+          blockHash: event.blockHash,
+          gasUsed: receipt.gasUsed.toString(),
+          status: receipt.status === 1 ? 'success' : 'failed',
+        };
+      })
+    );
+    
+    // Sort by timestamp (newest first)
+    transactions.sort((a, b) => b.timestamp - a.timestamp);
+    
+    return transactions;
+  } catch (error) {
+    console.error('Error fetching transaction history:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   getProvider,
   getContract,
   getContractWithSigner,
   stampFileOnChain,
   verifyFileOnChain,
+  getTransactionHistory,
 };
 
