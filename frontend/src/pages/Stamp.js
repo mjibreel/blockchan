@@ -5,6 +5,9 @@ import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
+// Debug: Log API URL (remove in production if needed)
+console.log('API_URL from environment:', API_URL);
+
 // Note: Contract address and explorer URL are now dynamic based on selected network
 
 // Contract ABI (minimal)

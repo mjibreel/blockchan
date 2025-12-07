@@ -4,6 +4,9 @@ import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
+// Debug: Log API URL (remove in production if needed)
+console.log('API_URL from environment:', API_URL);
+
 function History() {
   const { account, connectWallet, isConnected, selectedNetwork } = useWallet();
   const BLOCK_EXPLORER_URL = selectedNetwork?.blockExplorerUrls?.[0] || 'https://amoy.polygonscan.com';
@@ -49,7 +52,28 @@ function History() {
                                 err.message?.includes('Failed to fetch');
       
       if (isConnectionError) {
-        setError('Cannot connect to backend server. Please ensure the backend is running and REACT_APP_API_URL is configured correctly in Netlify environment variables.');
+        setError(
+          <div>
+            <p className="mb-2">⚠️ Cannot connect to backend server.</p>
+            <p className="mb-2 text-sm">To fix this:</p>
+            <ol className="list-decimal list-inside text-sm mb-2 space-y-1">
+              <li>Get your Vercel backend URL from <a href="https://vercel.com/mohamed-jibrils-projects/blockchan" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Vercel dashboard</a></li>
+              <li>Add it as <code className="bg-gray-100 px-1 rounded">REACT_APP_API_URL</code> in Netlify environment variables</li>
+              <li>Redeploy the frontend</li>
+            </ol>
+            <p className="text-sm mt-2">
+              <span className="font-semibold">Alternative:</span> View your transactions on{' '}
+              <a 
+                href={`${BLOCK_EXPLORER_URL}/address/${account}`} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-blue-600 underline"
+              >
+                Block Explorer
+              </a>
+            </p>
+          </div>
+        );
       } else {
         const errorMsg = err.response?.data?.error || err.message;
         // Filter out meaningless error messages like "eg"

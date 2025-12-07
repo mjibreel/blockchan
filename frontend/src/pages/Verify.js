@@ -5,6 +5,9 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 // Default to Polygon Amoy explorer, but can be updated dynamically
 const BLOCK_EXPLORER_URL = 'https://amoy.polygonscan.com';
 
+// Debug: Log API URL (remove in production if needed)
+console.log('API_URL from environment:', API_URL);
+
 function Verify() {
   const [file, setFile] = useState(null);
   const [pin, setPin] = useState('');
