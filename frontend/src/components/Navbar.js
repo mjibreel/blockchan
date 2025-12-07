@@ -52,16 +52,17 @@ function Navbar() {
               </Link>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            {/* Chain Selector */}
-            <div className="relative">
+          <div className="flex items-center space-x-3">
+            {/* Chain Selector - Compact and clean */}
+            <div className="relative hidden md:block">
               <button
                 onClick={() => setShowChainSelector(!showChainSelector)}
-                className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center"
+                className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded-md text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center border border-gray-200 dark:border-gray-600"
+                title="Select Network"
               >
-                <span className="mr-2">🌐</span>
-                {selectedNetwork?.name || 'Select Chain'}
-                <span className="ml-2">▼</span>
+                <span className="mr-1.5">🌐</span>
+                <span>{selectedNetwork?.name?.split(' ')[0] || 'Network'}</span>
+                <span className="ml-1.5 text-[10px] opacity-70">▼</span>
               </button>
               
               {showChainSelector && (

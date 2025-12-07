@@ -193,7 +193,8 @@ export function WalletProvider({ children }) {
       return; // Already on this network
     }
     
-    if (window.ethereum && isConnected) {
+    // If connected, switch network in MetaMask
+    if (window.ethereum && account) {
       await switchNetwork(network);
       // Reload to apply new network settings
       window.location.reload();
