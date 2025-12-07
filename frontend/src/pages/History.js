@@ -40,9 +40,25 @@ function History() {
       setFilteredTransactions(ownTransactions);
     } catch (err) {
       console.error('Error fetching history:', err);
-      setError(
-        err.response?.data?.error || err.message || 'Failed to fetch transaction history'
-      );
+      
+      // Check if it's a connection error
+      const isConnectionError = err.code === 'ECONNREFUSED' || 
+                                err.code === 'ERR_NETWORK' ||
+                                err.message?.includes('ERR_CONNECTION_REFUSED') || 
+                                err.message?.includes('Network Error') ||
+                                err.message?.includes('Failed to fetch');
+      
+      if (isConnectionError) {
+        setError('Cannot connect to backend server. Please ensure the backend is running and REACT_APP_API_URL is configured correctly in Netlify environment variables.');
+      } else {
+        const errorMsg = err.response?.data?.error || err.message;
+        // Filter out meaningless error messages like "eg"
+        if (errorMsg && typeof errorMsg === 'string' && errorMsg.length > 2 && errorMsg !== 'eg') {
+          setError(errorMsg);
+        } else {
+          setError('Failed to fetch transaction history. Please try again.');
+        }
+      }
       setTransactions([]);
       setFilteredTransactions([]);
     } finally {
