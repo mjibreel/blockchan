@@ -8,7 +8,12 @@ export const SUPPORTED_NETWORKS = {
       symbol: 'MATIC',
       decimals: 18,
     },
-    rpcUrls: ['https://rpc-amoy.polygon.technology'],
+    rpcUrls: [
+      'https://rpc-amoy.polygon.technology',
+      'https://polygon-amoy-bor-rpc.publicnode.com',
+      'https://rpc.ankr.com/polygon_amoy',
+      'https://polygon-amoy.drpc.org',
+    ],
     blockExplorerUrls: ['https://amoy.polygonscan.com/'],
     faucetUrl: 'https://faucet.polygon.technology/',
     contractAddress: process.env.REACT_APP_CONTRACT_ADDRESS_POLYGON || '0xf8D623Dbfa1Dd1A3c904A69323df00773827C2DA',

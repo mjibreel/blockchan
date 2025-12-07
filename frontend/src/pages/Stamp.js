@@ -156,14 +156,43 @@ function Stamp() {
         if (estimateError.reason && estimateError.reason.includes('File already stamped')) {
           throw new Error('This file with this PIN has already been stamped. Try a different file or use a different PIN.');
         }
+        // Check for RPC/network errors
+        if (estimateError.code === 'TIMEOUT' || estimateError.code === 'NETWORK_ERROR' || 
+            estimateError.message?.includes('timeout') || estimateError.message?.includes('network')) {
+          throw new Error('RPC node is slow or unresponsive. Please try again in a moment, or switch to a different RPC endpoint in MetaMask settings.');
+        }
         throw new Error(`Transaction would fail: ${estimateError.reason || estimateError.message}`);
       }
       
       // Step 5: Send transaction with explicit gas limit (COSTS GAS)
+      // Add timeout and retry logic for RPC issues
       console.log('Sending transaction to blockchain...');
-      const tx = await contract.stampFile(fileHashBytes32, isPublic, {
-        gasLimit: 200000, // Set explicit gas limit to avoid estimation issues
-      });
+      let tx;
+      const maxRetries = 2;
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          tx = await Promise.race([
+            contract.stampFile(fileHashBytes32, isPublic, {
+              gasLimit: 200000,
+            }),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Transaction timeout - RPC node is slow')), 30000)
+            )
+          ]);
+          break; // Success, exit retry loop
+        } catch (txError) {
+          if (attempt === maxRetries) {
+            // Last attempt failed, throw the error
+            if (txError.message?.includes('timeout') || txError.code === 'TIMEOUT') {
+              throw new Error('Transaction timed out. The RPC node is slow. Please try again in a moment or check your network connection.');
+            }
+            throw txError;
+          }
+          // Wait a bit before retrying
+          console.warn(`Transaction attempt ${attempt + 1} failed, retrying...`, txError);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
       console.log('Transaction sent:', tx.hash);
 
       // Step 6: Wait for confirmation
@@ -251,14 +280,16 @@ function Stamp() {
         errorMessage = 'Cannot connect to backend server. Please ensure the backend is running. If you just deployed to blockchain, check your transaction on the block explorer.';
       } else if (err.code === 'ACTION_REJECTED') {
         errorMessage = 'Transaction was rejected by user. Please try again.';
-      } else if (err.code === 'UNKNOWN_ERROR' || err.code === -32603) {
+      } else if (err.code === 'UNKNOWN_ERROR' || err.code === -32603 || err.code === 'TIMEOUT') {
         // Internal JSON-RPC error - could be various issues
         if (err.message && err.message.includes('File already stamped')) {
           errorMessage = 'This file with this PIN has already been stamped. Try a different file or use a different PIN.';
         } else if (err.message && err.message.includes('would fail')) {
           errorMessage = err.message;
+        } else if (err.message && (err.message.includes('timeout') || err.message.includes('slow'))) {
+          errorMessage = `RPC node timeout: The blockchain node is slow or unresponsive. Try: 1) Wait a moment and try again, 2) Check your internet connection, 3) Switch RPC endpoint in MetaMask (Settings → Networks → Polygon Amoy → Edit).`;
         } else {
-          errorMessage = `RPC error: The blockchain node encountered an issue. Please check: 1) You have enough ${selectedNetwork?.nativeCurrency?.symbol || 'ETH'} for gas, 2) You're on ${selectedNetwork?.name || 'the correct'} network, 3) Try again in a moment.`;
+          errorMessage = `RPC error: The blockchain node encountered an issue. Please check: 1) You have enough ${selectedNetwork?.nativeCurrency?.symbol || 'ETH'} for gas, 2) You're on ${selectedNetwork?.name || 'the correct'} network, 3) Try again in a moment. If the problem persists, try switching to a different RPC endpoint in MetaMask settings.`;
         }
       } else if (err.reason && err.reason.includes('File already stamped')) {
         errorMessage = 'This file with this PIN has already been stamped. Try a different file or use a different PIN.';
