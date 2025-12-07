@@ -24,12 +24,16 @@ function getProvider() {
  * Get contract instance
  */
 function getContract() {
-  if (!process.env.CONTRACT_ADDRESS) {
-    throw new Error('CONTRACT_ADDRESS not configured');
+  // Use environment variable or fallback to deployed Polygon Amoy contract
+  const contractAddress = process.env.CONTRACT_ADDRESS || '0xf8D623Dbfa1Dd1A3c904A69323df00773827C2DA';
+  
+  if (!contractAddress) {
+    throw new Error('CONTRACT_ADDRESS not configured and no fallback available');
   }
+  
   const provider = getProvider();
   return new ethers.Contract(
-    process.env.CONTRACT_ADDRESS,
+    contractAddress,
     CONTRACT_ABI,
     provider
   );
@@ -42,10 +46,13 @@ function getContractWithSigner() {
   if (!process.env.PRIVATE_KEY) {
     throw new Error('PRIVATE_KEY not configured');
   }
+  // Use environment variable or fallback to deployed Polygon Amoy contract
+  const contractAddress = process.env.CONTRACT_ADDRESS || '0xf8D623Dbfa1Dd1A3c904A69323df00773827C2DA';
+  
   const provider = getProvider();
   const signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
   return new ethers.Contract(
-    process.env.CONTRACT_ADDRESS,
+    contractAddress,
     CONTRACT_ABI,
     signer
   );

@@ -29,7 +29,21 @@ router.get('/:address', async (req, res, next) => {
       transactions,
     });
   } catch (error) {
-    console.error('Error in history route:', error);
+    console.error('Error fetching transaction history:', error);
+    
+    // Provide helpful error message
+    if (error.message?.includes('CONTRACT_ADDRESS')) {
+      return res.status(503).json({ 
+        error: 'Backend configuration incomplete. Contract address not configured.' 
+      });
+    }
+    
+    if (error.message?.includes('RPC_URL')) {
+      return res.status(503).json({ 
+        error: 'Backend configuration incomplete. RPC URL not configured.' 
+      });
+    }
+    
     next(error);
   }
 });
