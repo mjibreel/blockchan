@@ -54,8 +54,8 @@ module.exports = app;
 
 // Only start server if not in Vercel environment
 if (process.env.VERCEL !== '1' && require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📋 Health check: http://localhost:${PORT}/health`);
-  });
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`📋 Health check: http://localhost:${PORT}/health`);
+});
 }
