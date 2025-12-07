@@ -302,9 +302,14 @@ function Stamp() {
         } else if (err.message && err.message.includes('would fail')) {
           errorMessage = err.message;
         } else if (err.message && (err.message.includes('timeout') || err.message.includes('slow'))) {
-          errorMessage = `RPC node timeout: The blockchain node is slow or unresponsive. Try: 1) Wait a moment and try again, 2) Check your internet connection, 3) Switch RPC endpoint in MetaMask (Settings → Networks → Polygon Amoy → Edit).`;
-      } else {
-          errorMessage = `RPC error: The blockchain node encountered an issue. Please check: 1) You have enough ${selectedNetwork?.nativeCurrency?.symbol || 'ETH'} for gas, 2) You're on ${selectedNetwork?.name || 'the correct'} network, 3) Try again in a moment. If the problem persists, try switching to a different RPC endpoint in MetaMask settings.`;
+          errorMessage = `RPC node timeout: The blockchain node is slow or unresponsive. Try: 1) Wait a moment and try again, 2) Check your internet connection, 3) Switch RPC endpoint in MetaMask (Settings → Networks → ${selectedNetwork?.name || 'Polygon Amoy'} → Edit).`;
+        } else if (err.code === -32603 || err.code === 'UNKNOWN_ERROR') {
+          // Internal JSON-RPC error - usually RPC node issues
+          const networkName = selectedNetwork?.name || 'Polygon Amoy';
+          const rpcUrls = selectedNetwork?.rpcUrls || [];
+          errorMessage = `RPC node error: The ${networkName} RPC endpoint is having issues. Try: 1) Wait 30 seconds and retry, 2) Switch RPC in MetaMask (Settings → Networks → ${networkName} → Edit → Change RPC URL), 3) Alternative RPC URLs: ${rpcUrls.slice(1, 3).join(' or ')}`;
+        } else {
+          errorMessage = `RPC error: The blockchain node encountered an issue. Please check: 1) You have enough ${selectedNetwork?.nativeCurrency?.symbol || 'ETH'} for gas, 2) You're on ${selectedNetwork?.name || 'the correct'} network, 3) Try again in a moment. If the problem persists, try switching to a different RPC endpoint in MetaMask (Settings → Networks → ${selectedNetwork?.name || 'Polygon Amoy'} → Edit).`;
         }
       } else if (err.reason && err.reason.includes('File already stamped')) {
         errorMessage = 'This file with this PIN has already been stamped. Try a different file or use a different PIN.';
