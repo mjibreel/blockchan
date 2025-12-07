@@ -84,9 +84,25 @@ function Verify() {
       setResult(response.data);
     } catch (err) {
       console.error('Error verifying file:', err);
-      setError(
-        err.response?.data?.error || err.message || 'Failed to verify file. Please try again.'
-      );
+      
+      // Check if it's a connection error
+      const isConnectionError = err.code === 'ECONNREFUSED' || 
+                                err.code === 'ERR_NETWORK' ||
+                                err.message?.includes('ERR_CONNECTION_REFUSED') || 
+                                err.message?.includes('Network Error') ||
+                                err.message?.includes('Failed to fetch');
+      
+      if (isConnectionError) {
+        setError('Cannot connect to backend server. File verification on blockchain still works - you can check your transaction on the block explorer using the file hash.');
+      } else {
+        const errorMsg = err.response?.data?.error || err.message;
+        // Filter out meaningless error messages like "eg"
+        if (errorMsg && typeof errorMsg === 'string' && errorMsg.length > 2 && errorMsg !== 'eg') {
+          setError(errorMsg);
+        } else {
+          setError('Failed to verify file. Please try again.');
+        }
+      }
     } finally {
       setLoading(false);
     }

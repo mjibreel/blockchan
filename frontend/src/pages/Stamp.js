@@ -222,13 +222,18 @@ function Stamp() {
         backendData = response.data;
       } catch (backendError) {
         // Backend failed, but blockchain transaction succeeded - that's what matters!
-        console.warn('Backend API call failed (transaction still succeeded on blockchain):', backendError);
+        // Filter out meaningless error messages
+        const errorMsg = backendError.message || String(backendError);
+        if (errorMsg !== 'eg' && errorMsg.length > 2) {
+          console.warn('Backend API call failed (transaction still succeeded on blockchain):', backendError);
+        }
+        
         // Set warning but continue - blockchain transaction is what matters
         const isConnectionError = backendError.code === 'ECONNREFUSED' || 
                                   backendError.code === 'ERR_NETWORK' ||
-                                  backendError.message?.includes('ERR_CONNECTION_REFUSED') || 
-                                  backendError.message?.includes('Network Error') ||
-                                  backendError.message?.includes('Failed to fetch') ||
+                                  errorMsg?.includes('ERR_CONNECTION_REFUSED') || 
+                                  errorMsg?.includes('Network Error') ||
+                                  errorMsg?.includes('Failed to fetch') ||
                                   (backendError.response?.status === 0);
         
         if (isConnectionError) {
@@ -250,6 +255,8 @@ function Stamp() {
       }
 
       // Show success with blockchain data (backend data is optional)
+      // Clear any errors before showing success
+      setError(null);
       setResult({
         fileHash: fileHash.slice(2), // Remove 0x for display
         ownerAddress: account,
