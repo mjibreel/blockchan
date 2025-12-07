@@ -176,15 +176,16 @@ function Stamp() {
       // Add timeout and retry logic for RPC issues
       console.log('Sending transaction to blockchain...');
       let tx;
-      const maxRetries = 2;
+      const maxRetries = 3; // Increased retries for slow RPC nodes
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
+          // Increase timeout to 45 seconds for slow RPC nodes
           tx = await Promise.race([
             contract.stampFile(fileHashBytes32, isPublic, {
               gasLimit: 200000,
             }),
             new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Transaction timeout - RPC node is slow')), 30000)
+              setTimeout(() => reject(new Error('Transaction timeout - RPC node is slow')), 45000)
             )
           ]);
           break; // Success, exit retry loop
@@ -192,13 +193,15 @@ function Stamp() {
           if (attempt === maxRetries) {
             // Last attempt failed, throw the error
             if (txError.message?.includes('timeout') || txError.code === 'TIMEOUT') {
-              throw new Error('Transaction timed out. The RPC node is slow. Please try again in a moment or check your network connection.');
+              const networkName = selectedNetwork?.name || 'Polygon Amoy';
+              throw new Error(`Transaction timed out after ${maxRetries + 1} attempts. The ${networkName} RPC node is slow. Please: 1) Wait 30 seconds and retry, 2) Switch RPC endpoint in MetaMask (Settings → Networks → ${networkName} → Edit).`);
             }
             throw txError;
           }
-          // Wait a bit before retrying
-          console.warn(`Transaction attempt ${attempt + 1} failed, retrying...`, txError);
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          // Wait longer before retrying (exponential backoff: 3s, 6s, 9s)
+          const waitTime = 3000 * (attempt + 1);
+          console.warn(`Transaction attempt ${attempt + 1} failed, retrying in ${waitTime/1000}s...`, txError);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
         }
       }
       console.log('Transaction sent:', tx.hash);
