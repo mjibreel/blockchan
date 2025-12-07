@@ -19,6 +19,16 @@ export function WalletProvider({ children }) {
     setAccount(null);
     setProvider(null);
     setChainId(null);
+    // Clear any stored connection state
+    if (window.ethereum) {
+      // Disconnect by removing authorization (if supported)
+      try {
+        // Note: MetaMask doesn't have a disconnect method, but clearing state is enough
+        // The user will need to reconnect manually next time
+      } catch (error) {
+        console.log('Disconnected wallet');
+      }
+    }
   };
 
   const handleAccountsChanged = useCallback((accounts) => {
@@ -35,9 +45,9 @@ export function WalletProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    // Check if wallet is already connected
+    // Set up event listeners but don't auto-connect
+    // Users must manually click "Connect Wallet"
     if (window.ethereum) {
-      checkConnection();
       window.ethereum.on('accountsChanged', handleAccountsChanged);
       window.ethereum.on('chainChanged', handleChainChanged);
     }
