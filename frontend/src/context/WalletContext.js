@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
-import { SUPPORTED_NETWORKS, getNetworkByChainId, getDefaultNetwork, getSupportedChainIds } from '../config/networks';
+import { SUPPORTED_NETWORKS, getDefaultNetwork } from '../config/networks';
 
 const WalletContext = createContext();
 
