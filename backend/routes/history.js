@@ -8,6 +8,11 @@ const { getTransactionHistory } = require('../utils/blockchain');
  * Get transaction history for a specific wallet address
  */
 router.get('/:address', async (req, res, next) => {
+  // Set CORS headers for all responses
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
   try {
     const { address } = req.params;
     const { fromBlock } = req.query;
@@ -31,7 +36,7 @@ router.get('/:address', async (req, res, next) => {
   } catch (error) {
     console.error('Error fetching transaction history:', error);
     
-    // Provide helpful error message
+    // Provide helpful error message (CORS headers already set above)
     if (error.message?.includes('CONTRACT_ADDRESS')) {
       return res.status(503).json({ 
         error: 'Backend configuration incomplete. Contract address not configured.' 
