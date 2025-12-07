@@ -70,21 +70,6 @@ export function WalletProvider({ children }) {
     };
   }, [handleAccountsChanged, handleChainChanged]);
 
-  const checkConnection = async () => {
-    try {
-      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-      if (accounts.length > 0) {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const network = await provider.getNetwork();
-        setProvider(provider);
-        setAccount(accounts[0]);
-        setChainId(Number(network.chainId));
-      }
-    } catch (error) {
-      console.error('Error checking connection:', error);
-    }
-  };
-
   const connectWallet = async () => {
     if (!window.ethereum) {
       alert('Please install MetaMask!');
